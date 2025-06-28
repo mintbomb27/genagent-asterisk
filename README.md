@@ -70,6 +70,9 @@ Welcome! This Node.js application integrates Asterisk 22 with the OpenAI Realtim
      type=transport
      protocol=udp
      bind=0.0.0.0
+     external_media_address=3.89.115.249  ; Required: Replace with your EC2 instance's public IP from AWS console
+     external_signaling_address=3.89.115.249  ; Required: Replace with your EC2 instance's public IP from AWS console
+     local_net=172.31.0.0/16  ; Optional: Adjust to your VPC CIDR if different
 
      [300]
      type=endpoint
@@ -136,6 +139,7 @@ Welcome! This Node.js application integrates Asterisk 22 with the OpenAI Realtim
   - Asterisk logs: `tail -f /var/log/asterisk/messages`
   - Node.js debug: `node --inspect index.js`
 - Wrong password on SIP registration: Ensure the SIP phone username is `300` and password is `pass300`. Verify the server IP matches your Asterisk instance.
+- No audio: Ensure `external_media_address` and `external_signaling_address` in `pjsip.conf` match your EC2 public IP. Verify RTP ports (12000+) are open in EC2 security group and local firewall. Update `asterisk.js` `external_host` to use the server’s IP.
 
 ---
 

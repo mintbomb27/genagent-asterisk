@@ -29,27 +29,71 @@ Welcome! This Node.js application integrates Asterisk 22 with the OpenAI Realtim
    sudo apt install nodejs npm asterisk
    ```
 2. Configure Asterisk:
-   - Enable HTTP in `/etc/asterisk/http.conf`:
+   - Enable HTTP
+     ```bash
+     sudo nano /etc/asterisk/http.conf
+     ```
+     Add the following lines at the end of the file:
      ```ini
-     [general]
      enabled=yes
      bindaddr=0.0.0.0
      bindport=8088
      ```
-   - Configure ARI in `/etc/asterisk/ari.conf`:
+   - Configure ARI
+     ```bash
+     sudo nano /etc/asterisk/ari.conf
+     ```
+     Add the following lines at the end of the file:
      ```ini
-     [general]
-     enabled=yes
      [asterisk]
      type=user
      password=asterisk
      ```
-   - Add dialplan in `/etc/asterisk/extensions.conf`:
+   - Add dialplan
+     ```bash
+     sudo nano /etc/asterisk/extensions.conf
+     ```
+     Add the following lines at the end of the file:
      ```ini
      [default]
-     exten => 100,1,Answer()
+     exten => 9999,1,Answer()
      same => n,Stasis(asterisk_to_openai_rt)
      same => n,Hangup()
+     ```
+   - Configure SIP Extensions
+     ```bash
+     sudo nano /etc/asterisk/pjsip.conf
+     ```
+     Add the following lines at the end of the file to configure SIP extension 300 that can call 9999:
+     ```ini
+     [transport-udp]
+     type=transport
+     protocol=udp
+     bind=0.0.0.0
+
+     [300]
+     type=endpoint
+     context=default
+     disallow=all
+     allow=ulaw
+     auth=300
+     aors=300
+     direct_media=no
+     media_use_received_transport=yes
+     rtp_symmetric=yes
+     force_rport=yes
+     rewrite_contact=yes
+     dtmf_mode=auto
+
+     [300]
+     type=auth
+     auth_type=userpass
+     password=pass300
+     username=300
+
+     [300]
+     type=aor
+     max_contacts=2
      ```
    - Restart Asterisk:
      ```bash
@@ -73,7 +117,7 @@ Welcome! This Node.js application integrates Asterisk 22 with the OpenAI Realtim
 ---
 
 ## Usage
-1. Make a SIP call to the configured extension (e.g., `100`).
+1. Make a SIP call to the configured extension (e.g., `9999`).
 2. Interact with the assistant (e.g., say "Hi", "What is your name?").
 3. Check console for transcriptions:
    ```
@@ -91,6 +135,7 @@ Welcome! This Node.js application integrates Asterisk 22 with the OpenAI Realtim
 - Debug commands:
   - Asterisk logs: `tail -f /var/log/asterisk/messages`
   - Node.js debug: `node --inspect index.js`
+- Wrong password on SIP registration: Ensure the SIP phone username is `300` and password is `pass300`. Verify the server IP matches your Asterisk instance.
 
 ---
 

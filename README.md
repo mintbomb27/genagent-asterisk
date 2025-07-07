@@ -133,7 +133,7 @@ Welcome! This Node.js application integrates Asterisk 22 with the OpenAI Realtim
 
 ## Troubleshooting
 - Error: `OPENAI_API_KEY is missing`: Verify `OPENAI_API_KEY` in `config.conf`.
-- Error: `ARI connection error`: Check Asterisk (`sudo systemctl status asterisk`, port 8088).
+- Error: `ARI connection error`: Check Asterisk (`sudo systemctl status asterisk`, port 8088). Run: sudo asterisk -rx "ari show status"
 - No transcriptions: Set `LOG_LEVEL=debug` in `config.conf`.
 - Debug commands:
   - Asterisk logs: `tail -f /var/log/asterisk/messages`

@@ -2,10 +2,11 @@ require('dotenv').config({ path: './config.conf' });
 const winston = require('winston');
 const chalk = require('chalk');
 
+// Define configuration object
 const config = {
-  ARI_URL: 'http://127.0.0.1:8088',
-  ARI_USER: 'asterisk',
-  ARI_PASS: 'asterisk',
+  ARI_URL: process.env.ARI_URL || 'http://127.0.0.1:8088',
+  ARI_USER: process.env.ARI_USERNAME,
+  ARI_PASS: process.env.ARI_PASSWORD,
   ARI_APP: 'asterisk_to_openai_rt',
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   REALTIME_URL: `wss://api.openai.com/v1/realtime?model=${process.env.REALTIME_MODEL || 'gpt-4o-mini-realtime-preview-2024-12-17'}`,
@@ -21,9 +22,19 @@ const config = {
   CALL_DURATION_LIMIT_SECONDS: parseInt(process.env.CALL_DURATION_LIMIT_SECONDS) || 0 // 0 means no limit
 };
 
+// Debug logging of loaded configuration
+console.log('Loaded configuration:', {
+  ARI_URL: config.ARI_URL,
+  ARI_USER: config.ARI_USER,
+  ARI_PASS: config.ARI_PASS ? 'set' : 'unset',
+  OPENAI_API_KEY: config.OPENAI_API_KEY ? 'set' : 'unset',
+  LOG_LEVEL: config.LOG_LEVEL,
+  SYSTEM_PROMPT: config.SYSTEM_PROMPT ? 'set' : 'unset'
+});
+
+// Logger configuration
 let sentEventCounter = 0;
 let receivedEventCounter = -1;
-
 const logger = winston.createLogger({
   level: config.LOG_LEVEL,
   format: winston.format.combine(
@@ -51,9 +62,7 @@ const logger = winston.createLogger({
   ]
 });
 
-const logClient = (msg, level = 'info') => logger[level](`[Client] ${msg}`);
-const logOpenAI = (msg, level = 'info') => logger[level](`[OpenAI] ${msg}`);
-
+// Validate critical configurations
 if (!config.SYSTEM_PROMPT || config.SYSTEM_PROMPT.trim() === '') {
   logger.error('SYSTEM_PROMPT is missing or empty in config.conf');
   process.exit(1);
@@ -65,6 +74,9 @@ if (config.CALL_DURATION_LIMIT_SECONDS < 0) {
   process.exit(1);
 }
 logger.info(`CALL_DURATION_LIMIT_SECONDS set to ${config.CALL_DURATION_LIMIT_SECONDS} seconds`);
+
+const logClient = (msg, level = 'info') => logger[level](`[Client] ${msg}`);
+const logOpenAI = (msg, level = 'info') => logger[level](`[OpenAI] ${msg}`);
 
 module.exports = {
   config,

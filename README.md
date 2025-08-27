@@ -36,7 +36,7 @@ Welcome! This Node.js application integrates Asterisk 22 with the OpenAI Realtim
      Add the following lines at the end of the file:
      ```ini
      enabled=yes
-     bindaddr=0.0.0.0
+     bindaddr=127.0.0.1
      bindport=8088
      ```
    - Configure ARI

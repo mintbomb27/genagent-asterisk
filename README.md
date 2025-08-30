@@ -121,7 +121,7 @@ Welcome! This Node.js application integrates Asterisk 22 with the OpenAI Realtim
 
 ## Usage
 1. Make a SIP call to the configured extension (e.g., `9999`).
-2. Interact with the assistant (e.g., say "Hi", "What is your name?").
+2. Interact with the assistant (e.g., say "Hi, What is your name?").
 3. Check console for transcriptions:
    ```
    O-0005 | 2025-06-28T04:15:01.924Z [INFO] [OpenAI] Assistant transcription: Hello! I'm Sofia...

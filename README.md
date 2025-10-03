@@ -27,7 +27,7 @@ Welcome! This Node.js application integrates Asterisk 22 with the OpenAI Realtim
 - Auto-install script, just run on your Ubuntun 24 instance: 
   ```bash
   curl -sL https://raw.githubusercontent.com/infinitocloud/asterisk_to_openai_rt_community/main/autoinstall_asterisk_to_openai.sh | sudo bash -s
-  ---
+  ```
 
 ## Installation
 1. Install prerequisites:

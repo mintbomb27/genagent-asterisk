@@ -1,6 +1,6 @@
 const WebSocket = require('ws');
 const { v4: uuid } = require('uuid');
-const { config, logger, logClient, logOpenAI } = require('./config');
+const { config, logger, logClient, logServer } = require('./config');
 const { sipMap, cleanupPromises } = require('./state');
 const { streamAudio, rtpEvents } = require('./rtp');
 
@@ -9,7 +9,7 @@ logger.info('Loading openai.js module');
 async function waitForBufferEmpty(channelId, maxWaitTime = 6000, checkInterval = 10) {
   const channelData = sipMap.get(channelId);
   if (!channelData?.streamHandler) {
-    logOpenAI(`No streamHandler for ${channelId}, proceeding`, 'info');
+    logServer(`No streamHandler for ${channelId}, proceeding`, 'info');
     return true;
   }
   const streamHandler = channelData.streamHandler;
@@ -20,13 +20,13 @@ async function waitForBufferEmpty(channelId, maxWaitTime = 6000, checkInterval =
     audioDurationMs = Math.ceil((channelData.totalDeltaBytes / 8000) * 1000) + 500; // Audio duration + 500ms margin
   }
   const dynamicTimeout = Math.min(audioDurationMs, maxWaitTime);
-  logOpenAI(`Using dynamic timeout of ${dynamicTimeout}ms for ${channelId} (estimated audio duration: ${(channelData.totalDeltaBytes || 0) / 8000}s)`, 'info');
+  logServer(`Using dynamic timeout of ${dynamicTimeout}ms for ${channelId} (estimated audio duration: ${(channelData.totalDeltaBytes || 0) / 8000}s)`, 'info');
 
   let audioFinishedReceived = false;
   const audioFinishedPromise = new Promise((resolve) => {
     rtpEvents.once('audioFinished', (id) => {
       if (id === channelId) {
-        logOpenAI(`Audio finished sending for ${channelId} after ${Date.now() - startWaitTime}ms`, 'info');
+        logServer(`Audio finished sending for ${channelId} after ${Date.now() - startWaitTime}ms`, 'info');
         audioFinishedReceived = true;
         resolve();
       }
@@ -42,7 +42,7 @@ async function waitForBufferEmpty(channelId, maxWaitTime = 6000, checkInterval =
     while (!isBufferEmpty() && (Date.now() - startWaitTime) < maxWaitTime) {
       const now = Date.now();
       if (now - lastLogTime >= 50) {
-        logOpenAI(`Waiting for RTP buffer to empty for ${channelId} | Buffer: ${streamHandler.audioBuffer?.length || 0} bytes, Queue: ${streamHandler.packetQueue?.length || 0} packets`, 'info');
+        logServer(`Waiting for RTP buffer to empty for ${channelId} | Buffer: ${streamHandler.audioBuffer?.length || 0} bytes, Queue: ${streamHandler.packetQueue?.length || 0} packets`, 'info');
         lastLogTime = now;
       }
       await new Promise(resolve => setTimeout(resolve, checkInterval));
@@ -51,7 +51,7 @@ async function waitForBufferEmpty(channelId, maxWaitTime = 6000, checkInterval =
       logger.warn(`Timeout waiting for RTP buffer to empty for ${channelId} after ${maxWaitTime}ms`);
       return false;
     }
-    logOpenAI(`RTP buffer emptied for ${channelId} after ${Date.now() - startWaitTime}ms`, 'info');
+    logServer(`RTP buffer emptied for ${channelId} after ${Date.now() - startWaitTime}ms`, 'info');
   }
 
   const timeoutPromise = new Promise((resolve) => {
@@ -64,7 +64,7 @@ async function waitForBufferEmpty(channelId, maxWaitTime = 6000, checkInterval =
   });
   await Promise.race([audioFinishedPromise, timeoutPromise]);
 
-  logOpenAI(`waitForBufferEmpty completed for ${channelId} in ${Date.now() - startWaitTime}ms`, 'info');
+  logServer(`waitForBufferEmpty completed for ${channelId} in ${Date.now() - startWaitTime}ms`, 'info');
   return true;
 }
 
@@ -100,16 +100,16 @@ async function startOpenAIWebSocket(channelId) {
           logClient(`Session created for ${channelId}`);
           break;
         case 'session.updated':
-          logOpenAI(`Session updated for ${channelId}`);
+          logServer(`Session updated for ${channelId}`);
           break;
         case 'conversation.item.created':
-          logOpenAI(`Conversation item created for ${channelId}`);
+          logServer(`Conversation item created for ${channelId}`);
           if (response.item && response.item.id && response.item.role) {
             logger.debug(`Item created: id=${response.item.id}, role=${response.item.role} for ${channelId}`);
             itemRoles.set(response.item.id, response.item.role);
             if (response.item.role === 'user') {
               lastUserItemId = response.item.id;
-              logOpenAI(`User voice command detected for ${channelId}, stopping current playback`);
+              logServer(`User voice command detected for ${channelId}, stopping current playback`);
               logger.debug(`VAD triggered - Full message for user voice command: ${JSON.stringify(response, null, 2)}`);
               if (streamHandler) {
                 streamHandler.stopPlayback();
@@ -118,7 +118,7 @@ async function startOpenAIWebSocket(channelId) {
           }
           break;
         case 'response.created':
-          logOpenAI(`Response created for ${channelId}`);
+          logServer(`Response created for ${channelId}`);
           break;
         case 'response.audio.delta':
           if (response.delta) {
@@ -129,7 +129,7 @@ async function startOpenAIWebSocket(channelId) {
               sipMap.set(channelId, channelData);
               segmentCount++;
               if (totalDeltaBytes - loggedDeltaBytes >= 40000 || segmentCount >= 100) {
-                logOpenAI(`Received audio delta for ${channelId}: ${deltaBuffer.length} bytes, total: ${totalDeltaBytes} bytes, estimated duration: ${(totalDeltaBytes / 8000).toFixed(2)}s`, 'info');
+                logServer(`Received audio delta for ${channelId}: ${deltaBuffer.length} bytes, total: ${totalDeltaBytes} bytes, estimated duration: ${(totalDeltaBytes / 8000).toFixed(2)}s`, 'info');
                 loggedDeltaBytes = totalDeltaBytes;
                 segmentCount = 0;
               }
@@ -162,9 +162,9 @@ async function startOpenAIWebSocket(channelId) {
             const role = response.item_id && itemRoles.get(response.item_id) ? itemRoles.get(response.item_id) : (lastUserItemId ? 'User' : 'Assistant');
             logger.debug(`Transcript done - Full message: ${JSON.stringify(response, null, 2)}`);
             if (role === 'User') {
-              logOpenAI(`User command transcription for ${channelId}: ${response.transcript}`, 'info');
+              logServer(`User command transcription for ${channelId}: ${response.transcript}`, 'info');
             } else {
-              logOpenAI(`Assistant transcription for ${channelId}: ${response.transcript}`, 'info');
+              logServer(`Assistant transcription for ${channelId}: ${response.transcript}`, 'info');
             }
           }
           break;
@@ -177,11 +177,11 @@ async function startOpenAIWebSocket(channelId) {
         case 'conversation.item.input_audio_transcription.completed':
           if (response.transcript) {
             logger.debug(`User transcript completed - Full message: ${JSON.stringify(response, null, 2)}`);
-            logOpenAI(`User command transcription for ${channelId}: ${response.transcript}`, 'info');
+            logServer(`User command transcription for ${channelId}: ${response.transcript}`, 'info');
           }
           break;
         case 'response.audio.done':
-          logOpenAI(`Response audio done for ${channelId}, total delta bytes: ${totalDeltaBytes}, estimated duration: ${(totalDeltaBytes / 8000).toFixed(2)}s`, 'info');
+          logServer(`Response audio done for ${channelId}, total delta bytes: ${totalDeltaBytes}, estimated duration: ${(totalDeltaBytes / 8000).toFixed(2)}s`, 'info');
           isResponseActive = false;
           loggedDeltaBytes = 0;
           segmentCount = 0;

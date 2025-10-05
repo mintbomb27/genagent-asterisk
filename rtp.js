@@ -1,6 +1,7 @@
 const dgram = require('dgram');
+const { WaveFile } = require('wavefile');
 const { EventEmitter } = require('events');
-const { config, logger } = require('./config');
+const { config, logger, logClient } = require('./config');
 const { sipMap, rtpSenders, rtpReceivers } = require('./state');
 
 logger.info('Loading rtp.js module');
@@ -39,12 +40,26 @@ function startRTPReceiver(channelId, port) {
       logger.info(`RTP source assigned for ${channelId}: ${rinfo.address}:${rinfo.port}`);
     }
     if (channelData && channelData.ws && channelData.ws.readyState === 1) {
+      // Extract muLaw audio payload from RTP packet
       const muLawData = msg.slice(12);
-      channelData.ws.send(JSON.stringify({ type: 'input_audio_buffer.append', audio: muLawData.toString('base64') }));
+
+      // Convert muLaw to PCM16 (Int16Array) at 16kHz for Gemini Live API
+      const wav = new WaveFile();
+      // Create a wav from muLaw data (8kHz, mono, 8-bit muLaw)
+      wav.fromScratch(1, 8000, '8m', muLawData);
+      wav.fromMuLaw(); // decode to PCM
+      wav.toSampleRate(16000); // upsample to 16kHz
+      wav.toBitDepth("16"); // convert to 16-bit
+
+      // Get the PCM16 buffer (Int16Array)
+      const buffer = wav.getSamples(true, Int16Array);
+      const sendingData = JSON.stringify({ realtimeInput: { audio: { mimeType: "audio/pcm;rate=16000", data: Buffer.from(buffer.buffer).toString("base64")} }});
+      logger.debug(sendingData);
+      channelData.ws.send(sendingData);
     }
   });
   rtpReceiver.on('error', (err) => logger.error(`RTP Receiver error for ${channelId}: ${err.message}`));
-  rtpReceiver.bind(port, '127.0.0.1');
+  rtpReceiver.bind(port, '0.0.0.0');
 }
 
 function buildRTPHeader(seq, timestamp, ssrc) {

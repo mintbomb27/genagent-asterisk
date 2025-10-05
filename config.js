@@ -1,4 +1,4 @@
-require('dotenv').config({ path: './config.conf' });
+require('dotenv').config({ path: './configs.conf' });
 const winston = require('winston');
 const chalk = require('chalk');
 
@@ -8,15 +8,17 @@ const config = {
   ARI_USER: process.env.ARI_USERNAME,
   ARI_PASS: process.env.ARI_PASSWORD,
   ARI_APP: 'asterisk_to_openai_rt',
-  OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-  REALTIME_URL: `wss://api.openai.com/v1/realtime?model=${process.env.REALTIME_MODEL || 'gpt-4o-mini-realtime-preview-2024-12-17'}`,
+  EXTERNAL_MEDIA_IP: process.env.EXTERNAL_MEDIA_IP,
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  REALTIME_URL: `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent`,
+  LIVE_MODEL: process.env.LIVE_MODEL,
   RTP_PORT_START: 12000,
   MAX_CONCURRENT_CALLS: parseInt(process.env.MAX_CONCURRENT_CALLS) || 10,
   VAD_THRESHOLD: parseFloat(process.env.VAD_THRESHOLD) || 0.6,
   VAD_PREFIX_PADDING_MS: Number(process.env.VAD_PREFIX_PADDING_MS) || 200,
   VAD_SILENCE_DURATION_MS: Number(process.env.VAD_SILENCE_DURATION_MS) || 600,
   LOG_LEVEL: process.env.LOG_LEVEL || 'info',
-  SYSTEM_PROMPT: process.env.SYSTEM_PROMPT,
+  SYSTEM_INSTRUCTION: process.env.SYSTEM_INSTRUCTION,
   INITIAL_MESSAGE: process.env.INITIAL_MESSAGE || 'Hi',
   SILENCE_PADDING_MS: parseInt(process.env.SILENCE_PADDING_MS) || 100,
   CALL_DURATION_LIMIT_SECONDS: parseInt(process.env.CALL_DURATION_LIMIT_SECONDS) || 0 // 0 means no limit
@@ -29,7 +31,7 @@ console.log('Loaded configuration:', {
   ARI_PASS: config.ARI_PASS ? 'set' : 'unset',
   OPENAI_API_KEY: config.OPENAI_API_KEY ? 'set' : 'unset',
   LOG_LEVEL: config.LOG_LEVEL,
-  SYSTEM_PROMPT: config.SYSTEM_PROMPT ? 'set' : 'unset'
+  SYSTEM_INSTRUCTION: config.SYSTEM_INSTRUCTION ? 'set' : 'unset'
 });
 
 // Logger configuration
@@ -63,11 +65,11 @@ const logger = winston.createLogger({
 });
 
 // Validate critical configurations
-if (!config.SYSTEM_PROMPT || config.SYSTEM_PROMPT.trim() === '') {
-  logger.error('SYSTEM_PROMPT is missing or empty in config.conf');
+if (!config.SYSTEM_INSTRUCTION || config.SYSTEM_INSTRUCTION.trim() === '') {
+  logger.error('SYSTEM_INSTRUCTION is missing or empty in config.conf');
   process.exit(1);
 }
-logger.info('SYSTEM_PROMPT loaded from config.conf');
+logger.info('SYSTEM_INSTRUCTION loaded from config.conf');
 
 if (config.CALL_DURATION_LIMIT_SECONDS < 0) {
   logger.error('CALL_DURATION_LIMIT_SECONDS cannot be negative in config.conf');
@@ -76,11 +78,11 @@ if (config.CALL_DURATION_LIMIT_SECONDS < 0) {
 logger.info(`CALL_DURATION_LIMIT_SECONDS set to ${config.CALL_DURATION_LIMIT_SECONDS} seconds`);
 
 const logClient = (msg, level = 'info') => logger[level](`[Client] ${msg}`);
-const logOpenAI = (msg, level = 'info') => logger[level](`[OpenAI] ${msg}`);
+const logServer = (msg, level = 'info') => logger[level](`[Agent] ${msg}`);
 
 module.exports = {
   config,
   logger,
   logClient,
-  logOpenAI
+  logServer
 };

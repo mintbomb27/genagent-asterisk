@@ -30,7 +30,7 @@ console.log('Loaded configuration:', {
   ARI_URL: config.ARI_URL,
   ARI_USER: config.ARI_USER,
   ARI_PASS: config.ARI_PASS ? 'set' : 'unset',
-  OPENAI_API_KEY: config.OPENAI_API_KEY ? 'set' : 'unset',
+  GEMINI_API_KEY: config.GEMINI_API_KEY ? 'set' : 'unset',
   LOG_LEVEL: config.LOG_LEVEL,
   SYSTEM_INSTRUCTION: config.SYSTEM_INSTRUCTION ? 'set' : 'unset'
 });
@@ -49,7 +49,7 @@ const logger = winston.createLogger({
         counter = `C-${sentEventCounter.toString().padStart(4, '0')}`;
         sentEventCounter++;
         coloredMessage = chalk.cyanBright(message);
-      } else if (origin === '[OpenAI]') {
+      } else if (origin === '[Agent]') {
         counter = `O-${receivedEventCounter.toString().padStart(4, '0')}`;
         receivedEventCounter++;
         coloredMessage = chalk.yellowBright(message);

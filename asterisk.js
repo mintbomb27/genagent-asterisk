@@ -183,10 +183,11 @@ async function initializeAriClient() {
           connection_type: 'client',
           direction: 'both'
         };
-        sipMap.set(channel.id, { bridgeId, channelId: channel.id, bridge, channel, rtpPort: port, wsClosed: false });
         const extChannel = await ariClient.channels.externalMedia(extParams);
-        logger.info(`ExternalMedia channel ${extChannel.id} created with codec ulaw, RTP to 127.0.0.1:${port}`);
+        logger.info(`ExternalMedia channel ${extChannel.id} created with codec ulaw, RTP to ${config.EXTERNAL_MEDIA_IP}:${port}`);
+        sipMap.set(channel.id, { bridgeId, extChannelId: extChannel.id, channelId: channel.id, bridge, channel, rtpPort: port, wsClosed: false, rtpSource: {address: config.RTP_SOURCE_IP, port: extChannel.channelvars.UNICASTRTP_LOCAL_PORT} });
         extMap.set(extChannel.id, { bridgeId, channelId: channel.id });
+        logger.info(`RTP source determined for ${extChannel.id}: ${config.RTP_SOURCE_IP}:${extChannel.channelvars.UNICASTRTP_LOCAL_PORT}`);
         logger.info(`extMap updated for channel ${extChannel.id} with bridge ${bridgeId}`);
 
         if (config.CALL_DURATION_LIMIT_SECONDS > 0) {
@@ -225,6 +226,19 @@ async function initializeAriClient() {
           if (e.message.includes('Channel not found')) {
             logger.info(`Channel ${channel.id} already hung up, no cleanup needed`);
             const channelData = sipMap.get(channel.id);
+            //Hangup Related ExternalMedia Channel
+            if (channelData && channelData.extChannelId) {
+              try {
+                await ariClient.channels.hangup({ channelId: channelData.extChannelId });
+                logger.info(`Hanging up ExternalMedia Channel ${channelData.extChannelId} for channel ${channel.id} on StasisEnd`);
+              } catch (e) {
+                if (e.message.includes('Channel not found')) {
+                  logger.info(`ExternalMedia Channel ${channel.id} already hung up, no cleanup needed`);
+                } else {
+                  logger.error(`Error in Hanging up External Media Channel ${channelData.extChannelId} for channel ${channel.id} on StasisEnd: ${e.message}`)
+                }
+              }
+            }
             if (channelData && channelData.ws && !channelData.wsClosed && typeof channelData.ws.close === 'function') {
               logger.info(`Closing WebSocket for channel ${channel.id} on StasisEnd`);
               channelData.ws.close();

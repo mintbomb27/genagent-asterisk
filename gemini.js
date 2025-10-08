@@ -203,7 +203,7 @@ async function startGeminiWebSocket(channelId) {
         logClient(`Session Setup Sent for ${channelId}`);
 
         try {
-          const rtpSource = channelData.rtpSource || { address: '127.0.0.1', port: 12000 };
+          const rtpSource = channelData.rtpSource || { address: '0.0.0.0', port: 12000 };
           streamHandler = await streamAudio(channelId, rtpSource);
           channelData.ws = ws;
           channelData.streamHandler = streamHandler;
@@ -213,7 +213,7 @@ async function startGeminiWebSocket(channelId) {
           const itemId = uuid().replace(/-/g, '').substring(0, 32);
           logClient(`Requested response for ${channelId}`);
           isResponseActive = true;
-        //   resolve(ws);
+          resolve(ws);
         } catch (e) {
           logger.error(`Error setting up WebSocket for ${channelId}: ${e.message}`);
           reject(e);

@@ -34,11 +34,11 @@ function startRTPReceiver(channelId, port) {
   rtpReceiver.on('listening', () => logger.info(`RTP Receiver for ${channelId} listening on 127.0.0.1:${port}`));
   rtpReceiver.on('message', (msg, rinfo) => {
     const channelData = sipMap.get(channelId);
-    if (channelData && !channelData.rtpSource) {
-      channelData.rtpSource = { address: rinfo.address, port: rinfo.port };
-      sipMap.set(channelId, channelData);
-      logger.info(`RTP source assigned for ${channelId}: ${rinfo.address}:${rinfo.port}`);
-    }
+    // if (channelData && !channelData.rtpSource) {
+    //   channelData.rtpSource = { address: rinfo.address, port: rinfo.port };
+    //   sipMap.set(channelId, channelData);
+    //   logger.info(`RTP source assigned for ${channelId}: ${rinfo.address}:${rinfo.port}`);
+    // }
     if (channelData && channelData.ws && channelData.ws.readyState === 1) {
       // Extract muLaw audio payload from RTP packet
       const muLawData = msg.slice(12);

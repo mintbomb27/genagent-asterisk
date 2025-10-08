@@ -31,7 +31,7 @@ function startRTPReceiver(channelId, port) {
   rtpReceiver.isOpen = true;
   rtpReceivers.set(channelId, rtpReceiver);
 
-  rtpReceiver.on('listening', () => logger.info(`RTP Receiver for ${channelId} listening on 127.0.0.1:${port}`));
+  rtpReceiver.on('listening', () => logger.info(`RTP Receiver for ${channelId} listening on 0.0.0.0:${port}`));
   rtpReceiver.on('message', (msg, rinfo) => {
     const channelData = sipMap.get(channelId);
     if (channelData && !channelData.rtpSource) {

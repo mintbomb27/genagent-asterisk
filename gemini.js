@@ -176,6 +176,7 @@ async function startGeminiWebSocket(channelId) {
         }
     } catch (e) {
       logger.error(`Error processing message for ${channelId}: ${e.message}`);
+      logger.error(JSON.stringify(response['serverContent']['modelTurn']));
     }
   };
 

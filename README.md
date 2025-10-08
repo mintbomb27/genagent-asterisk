@@ -1,11 +1,12 @@
-# Asterisk to OpenAI Realtime Community Edition
+# Asterisk to Gemini Live
 
-Welcome! This Node.js application integrates Asterisk 22 with the OpenAI Realtime API to provide a voice-based virtual assistant for SIP calls. It processes audio in real-time and displays user and assistant transcriptions in the console.
+This fork of Asterisk to OpenAI adds support for Gemini Live API as well.
+This Node.js Asterisk ARI application integrates Asterisk 22 with the Gemini Live API to provide a voice-based virtual assistant for SIP calls. It processes audio in real-time and displays user and assistant transcriptions in the console.
 
 ---
 
 ## Features
-- Real-time audio processing with Asterisk and OpenAI.
+- Real-time audio processing with Asterisk and Gemini.
 - Console transcriptions for user and assistant speech.
 - Clean resource management (channels, bridges, WebSocket, RTP).
 - Configurable via `config.conf` (e.g., API key, prompt).
@@ -18,7 +19,7 @@ Welcome! This Node.js application integrates Asterisk 22 with the OpenAI Realtim
 | OS            | Ubuntu 24.04 LTS                            |
 | Software      | - Node.js v18.20.8+ (`node -v`)<br>- Asterisk 22 with ARI enabled (`http.conf`, `ari.conf`)<br>- Node dependencies: `ari-client`, `ws`, `uuid`, `winston`, `chalk`, `dotenv` |
 | Network       | - Ports: 8088 (ARI), 12000+ (RTP)<br>- Access to `wss://api.openai.com/v1/realtime` |
-| Credentials   | - OpenAI API key (`OPENAI_API_KEY`)<br>- ARI credentials (`asterisk`/`asterisk`) |
+| Credentials   | - Gemini API key (`GEMINI_API_KEY`)<br>- ARI credentials (`asterisk`/`asterisk`) |
 
 ---
 
@@ -26,7 +27,7 @@ Welcome! This Node.js application integrates Asterisk 22 with the OpenAI Realtim
 
 - Auto-install script, just run on your Ubuntun 24 instance: 
   ```bash
-  curl -sL https://raw.githubusercontent.com/infinitocloud/asterisk_to_openai_rt_community/main/autoinstall_asterisk_to_openai.sh | sudo bash -s
+  curl -sL https://raw.githubusercontent.com/mintbomb27/genagent_asterisk/main/autoinstall_asterisk_to_openai.sh | sudo bash -s
   ```
 
 ## Installation
@@ -43,18 +44,18 @@ Welcome! This Node.js application integrates Asterisk 22 with the OpenAI Realtim
      Add the following lines at the end of the file:
      ```ini
      enabled=yes
-     bindaddr=127.0.0.1
+     bindaddr=0.0.0.0
      bindport=8088
      ```
    - Configure ARI
      ```bash
      sudo nano /etc/asterisk/ari.conf
      ```
-     Add the following lines at the end of the file:
+     Add the following lines after replacing the secure password.
      ```ini
      [asterisk]
      type=user
-     password=asterisk
+     password=<SECUREPASSWORD>
      ```
    - Add dialplan
      ```bash
@@ -64,9 +65,10 @@ Welcome! This Node.js application integrates Asterisk 22 with the OpenAI Realtim
      ```ini
      [default]
      exten => 9999,1,Answer()
-     same => n,Stasis(asterisk_to_openai_rt)
+     same => n,Stasis(genagent_asterisk)
      same => n,Hangup()
      ```
+     The above dialplan means once you dial 9999 on any extension, it connects to our ARI Application.
    - Configure SIP Extensions
      ```bash
      sudo nano /etc/asterisk/pjsip.conf
@@ -77,9 +79,9 @@ Welcome! This Node.js application integrates Asterisk 22 with the OpenAI Realtim
      type=transport
      protocol=udp
      bind=0.0.0.0
-     external_media_address=3.89.115.249  ; Required: Replace with your EC2 instance's public IP from AWS console
-     external_signaling_address=3.89.115.249  ; Required: Replace with your EC2 instance's public IP from AWS console
-     local_net=172.31.0.0/16  ; Optional: Adjust to your VPC CIDR if different
+     external_media_address=3.89.115.249  ; Required if your Asterisk Machine is behind a NAT (Public Cloud, VPS...)
+     external_signaling_address=3.89.115.249  ; Required if your Asterisk Machine is behind a NAT (Public Cloud, VPS...)
+     local_net=172.31.0.0/16  ; Optional: Adjust to your Local Network/VPC CIDR if different
 
      [300]
      type=endpoint
@@ -111,13 +113,14 @@ Welcome! This Node.js application integrates Asterisk 22 with the OpenAI Realtim
      ```
 3. Clone the repository and install dependencies:
    ```bash
-   git clone https://github.com/infinitocloud/asterisk_to_openai_rt_community.git
-   cd asterisk_to_openai_rt_community
+   git clone https://github.com/mintbomb27/genagent-asterisk.git
+   cd genagent-asterisk
    npm install
    ```
-4. Edit `config.conf` in the project root and add your `OPENAI_API_KEY` in the designated field:
-   ```plaintext
-   OPENAI_API_KEY=
+4. Rename the `configs.conf.sample` to `configs.conf` & edit it in the project root to add your `GEMINI_API_KEY` in the designated field:
+   ```bash
+    mv configs.conf.sample configs.conf
+    vim configs.conf
    ```
 5. Run the application:
    ```bash
@@ -131,15 +134,15 @@ Welcome! This Node.js application integrates Asterisk 22 with the OpenAI Realtim
 2. Interact with the assistant (e.g., say "Hi, What is your name?").
 3. Check console for transcriptions:
    ```
-   O-0005 | 2025-06-28T04:15:01.924Z [INFO] [OpenAI] Assistant transcription: Hello! I'm Sofia...
-   O-0010 | 2025-06-28T04:15:08.045Z [INFO] [OpenAI] User command transcription: What is your name?
+   O-0005 | 2025-06-28T04:15:01.924Z [INFO] [Agent] Assistant transcription: Hello! I'm Sofia...
+   O-0010 | 2025-06-28T04:15:08.045Z [INFO] [Agent] User command transcription: What is your name?
    ```
 4. End the call or press `Ctrl+C` to stop.
 
 ---
 
 ## Troubleshooting
-- Error: `OPENAI_API_KEY is missing`: Verify `OPENAI_API_KEY` in `config.conf`.
+- Error: `GEMINI_API_KEY is missing`: Verify `GEMINI_API_KEY` in `config.conf`.
 - Error: `ARI connection error`: Check Asterisk (`sudo systemctl status asterisk`, port 8088). Run: sudo asterisk -rx "ari show status"
 - No transcriptions: Set `LOG_LEVEL=debug` in `config.conf`.
 - Debug commands:

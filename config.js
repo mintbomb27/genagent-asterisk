@@ -7,7 +7,7 @@ const config = {
   ARI_URL: process.env.ARI_URL || 'http://127.0.0.1:8088',
   ARI_USER: process.env.ARI_USERNAME,
   ARI_PASS: process.env.ARI_PASSWORD,
-  ARI_APP: 'asterisk_to_openai_rt',
+  ARI_APP: 'genagent_asterisk',
   EXTERNAL_MEDIA_IP: process.env.EXTERNAL_MEDIA_IP,
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   REALTIME_URL: `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent`,
@@ -29,7 +29,7 @@ console.log('Loaded configuration:', {
   ARI_URL: config.ARI_URL,
   ARI_USER: config.ARI_USER,
   ARI_PASS: config.ARI_PASS ? 'set' : 'unset',
-  OPENAI_API_KEY: config.OPENAI_API_KEY ? 'set' : 'unset',
+  GEMINI_API_KEY: config.GEMINI_API_KEY ? 'set' : 'unset',
   LOG_LEVEL: config.LOG_LEVEL,
   SYSTEM_INSTRUCTION: config.SYSTEM_INSTRUCTION ? 'set' : 'unset'
 });
@@ -48,7 +48,7 @@ const logger = winston.createLogger({
         counter = `C-${sentEventCounter.toString().padStart(4, '0')}`;
         sentEventCounter++;
         coloredMessage = chalk.cyanBright(message);
-      } else if (origin === '[OpenAI]') {
+      } else if (origin === '[Agent]') {
         counter = `O-${receivedEventCounter.toString().padStart(4, '0')}`;
         receivedEventCounter++;
         coloredMessage = chalk.yellowBright(message);
